@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ApolloClient,
   InMemoryCache,
   ApolloProvider,
   useQuery,
+  useMutation,
   gql,
+  variables,
 } from "@apollo/client";
 
-import { Container } from "shards-react";
+import { Container, Row, Col, FormInput, Button } from "shards-react";
 
 const client = new ApolloClient({
   uri: "http://localhost:4000/",
@@ -24,12 +26,19 @@ const GET_MESSAGES = gql`
   }
 `;
 
+const POST_MESSAGE = gql`
+  mutation($user: String!, $content: String!) {
+    postMessage(user: $user, content: $content)
+  }
+`;
+
 const Messages = ({ user }) => {
-  const { data } = useQuery(GET_MESSAGES);
+  console.log({ user });
+  const { data } = useQuery(GET_MESSAGES, {
+    pollInterval: 500,
+  });
 
   if (!data) return null;
-
-  console.log("message", data.messages);
 
   return (
     <div>
@@ -80,9 +89,65 @@ const Messages = ({ user }) => {
 };
 
 const Chat = () => {
+  const [stateData, setStateData] = useState({
+    user: "George",
+    content: "Wo you da ji ji",
+  });
+
+  const [postMessage] = useMutation(POST_MESSAGE);
+
+  const onSend = () => {
+    if (stateData.content.length === 0) {
+    }
+
+    postMessage({
+      variables: stateData,
+    });
+
+    setStateData({
+      ...stateData,
+      content: "",
+    });
+  };
+
   return (
     <Container>
-      <Messages user="George"></Messages>
+      <Messages user={stateData.user}></Messages>
+      <Row>
+        <Col xs={2} style={{ padding: 0 }}>
+          <FormInput
+            label="User"
+            value={stateData.user}
+            onChange={(e) => {
+              setStateData({
+                ...stateData,
+                user: e.target.value,
+              });
+
+              console.log(stateData.user);
+            }}
+          ></FormInput>
+        </Col>
+        <Col xs={8} style={{ padding: 0 }}>
+          <FormInput
+            label="Content"
+            value={stateData.content}
+            onChange={(e) => {
+              console.log(stateData.content);
+              return setStateData({
+                ...stateData,
+                content: e.target.value,
+              });
+            }}
+            onKeyUp={(e) => {
+              if (e.keyCode === 13) onSend();
+            }}
+          ></FormInput>
+        </Col>
+        <Col xs={2} style={{ padding: 0 }}>
+          <Button onClick={onSend}>Send</Button>
+        </Col>
+      </Row>
     </Container>
   );
 };
